@@ -1,6 +1,4 @@
-music-backend/
-
-# Music Backend
+# OpenZik Backend
 
 This backend handles search, download, and music library management for the OpenZik application.
 
