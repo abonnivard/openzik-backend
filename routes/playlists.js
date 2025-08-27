@@ -26,7 +26,7 @@ router.get("/", authenticateToken, async (req, res) => {
   const userId = req.user;
   try {
     const result = await pool.query(
-      "SELECT * FROM playlists WHERE user_id = $1",
+      "SELECT * FROM playlists WHERE user_id = $1 ORDER BY is_pinned DESC, created_at DESC",
       [userId]
     );
     res.json(result.rows);
@@ -156,6 +156,35 @@ router.delete("/:playlistId", authenticateToken, async (req, res) => {
     await pool.query("DELETE FROM playlists WHERE id = $1", [playlistId]);
 
     res.json({ message: "Playlist deleted" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Database error" });
+  }
+});
+
+// Pin/Unpin une playlist
+router.put("/:playlistId/pin", authenticateToken, async (req, res) => {
+  const userId = req.user;
+  const { playlistId } = req.params;
+  const { isPinned } = req.body;
+
+  try {
+    // Vérifie que la playlist appartient bien à l'utilisateur
+    const playlistCheck = await pool.query(
+      "SELECT * FROM playlists WHERE id = $1 AND user_id = $2",
+      [playlistId, userId]
+    );
+    if (playlistCheck.rows.length === 0) {
+      return res.status(404).json({ error: "Playlist not found" });
+    }
+
+    // Met à jour le statut pin de la playlist
+    await pool.query(
+      "UPDATE playlists SET is_pinned = $1 WHERE id = $2",
+      [isPinned, playlistId]
+    );
+
+    res.json({ message: `Playlist ${isPinned ? 'pinned' : 'unpinned'} successfully` });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Database error" });

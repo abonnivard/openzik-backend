@@ -69,11 +69,23 @@ router.post("/track-played", authenticateToken, async (req, res) => {
   if (!trackId) return res.status(400).json({ error: "trackId is required" });
 
   try {
+    // Ajouter à recently_played
     await pool.query(
       "INSERT INTO recently_played (user_id, track_id) VALUES ($1, $2)",
       [userId, trackId]
     );
-    res.json({ message: "Track added to recently played" });
+
+    // Incrémenter ou créer le compteur dans user_track_plays
+    await pool.query(`
+      INSERT INTO user_track_plays (user_id, track_id, play_count, last_played)
+      VALUES ($1, $2, 1, NOW())
+      ON CONFLICT (user_id, track_id)
+      DO UPDATE SET 
+        play_count = user_track_plays.play_count + 1,
+        last_played = NOW()
+    `, [userId, trackId]);
+
+    res.json({ message: "Track added to recently played and play count updated" });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Database error" });

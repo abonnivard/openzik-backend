@@ -89,6 +89,7 @@ export async function initDB() {
         user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         name TEXT NOT NULL,
         image TEXT,
+        is_pinned BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
@@ -120,7 +121,26 @@ export async function initDB() {
       )
     `);
 
-    console.log("✅ PostgreSQL initialisé (tracks + albums + ingest_queue + users + playlists + liked_tracks, recently_played)");
+    // Nouvelle table pour compter les lectures par utilisateur et track
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_track_plays (
+        id SERIAL PRIMARY KEY,
+        user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        track_id INT NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+        play_count INT DEFAULT 0,
+        last_played TIMESTAMP DEFAULT NOW(),
+        UNIQUE(user_id, track_id)
+      )
+    `);
+
+    // --- Migration pour ajouter is_pinned aux playlists existantes ---
+    try {
+      await pool.query(`ALTER TABLE playlists ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN DEFAULT FALSE`);
+    } catch (err) {
+      // Colonne existe déjà, continue
+    }
+
+    console.log("✅ PostgreSQL initialisé (tracks + albums + ingest_queue + users + playlists + liked_tracks + recently_played + user_track_plays)");
   } catch (err) {
     console.error("Erreur initDB:", err.message);
     throw err;

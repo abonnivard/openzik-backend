@@ -12,6 +12,7 @@ import { pool } from "./services/db.js";
 import playlistRoutes from "./routes/playlists.js";
 import likeRoutes from "./routes/likes.js";
 import homeRoutes from "./routes/home.js";
+import statsRoutes from "./routes/stats.js";
 
 
 
@@ -32,6 +33,7 @@ app.use("/login", authRoutes);
 app.use("/playlists", playlistRoutes);
 app.use("/likes", likeRoutes);
 app.use("/home", homeRoutes);
+app.use("/stats", statsRoutes);
 
 // init db
 initDB();
