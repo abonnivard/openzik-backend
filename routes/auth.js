@@ -77,7 +77,7 @@ router.get("/user-info", async (req, res) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret");
     const userRes = await pool.query(
-      "SELECT username, first_name, last_name, must_change_password FROM users WHERE id = $1",
+      "SELECT username, first_name, last_name, must_change_password, profile_image FROM users WHERE id = $1",
       [decoded.id]
     );
     const user = userRes.rows[0];

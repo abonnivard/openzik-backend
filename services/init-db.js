@@ -64,7 +64,9 @@ export async function initDB() {
         last_name VARCHAR(50),
         password_hash TEXT NOT NULL,
         is_admin BOOLEAN DEFAULT FALSE,
-        must_change_password BOOLEAN DEFAULT TRUE
+        must_change_password BOOLEAN DEFAULT TRUE,
+        profile_image TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
       )
     `);
 
@@ -79,7 +81,30 @@ export async function initDB() {
          VALUES ($1, $2, $3, $4, TRUE, TRUE)`,
         [adminUsername, "Admin", "User", hash]
       );
-      console.log("✅ Admin initial créé (username: admin, password: admin)");
+      console.log("Admin créé avec succès. Identifiants -> admin / admin");
+    }
+
+    // --- Migrations pour ajouter les nouvelles colonnes ---
+    try {
+      // Ajouter profile_image à users si elle n'existe pas
+      await pool.query(`
+        ALTER TABLE users 
+        ADD COLUMN IF NOT EXISTS profile_image TEXT
+      `);
+      
+      // Ajouter custom_image à playlists si elle n'existe pas  
+      await pool.query(`
+        ALTER TABLE playlists 
+        ADD COLUMN IF NOT EXISTS custom_image TEXT
+      `);
+      
+      // Ajouter created_at à users si elle n'existe pas
+      await pool.query(`
+        ALTER TABLE users 
+        ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()
+      `);
+    } catch (migrationError) {
+      console.log("Migrations already applied or error:", migrationError.message);
     }
 
     // --- Nouvelles tables pour playlists et liked tracks ---
@@ -89,6 +114,7 @@ export async function initDB() {
         user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         name TEXT NOT NULL,
         image TEXT,
+        custom_image TEXT,
         is_pinned BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT NOW()
       )

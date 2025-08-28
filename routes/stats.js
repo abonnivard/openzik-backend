@@ -13,7 +13,7 @@ function authenticateToken(req, res, next) {
   const token = authHeader.split(" ")[1];
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret");
-    req.user = decoded; // ajoute info user au req pour usage futur
+    req.user = decoded;
     next();
   } catch (err) {
     return res.status(401).json({ message: "Unauthorized" });

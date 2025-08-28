@@ -27,7 +27,6 @@ export async function ensureSpotifyToken(req, res, next) {
 
     spotifyToken = resp.data.access_token;
     tokenExpiresAt = Date.now() + resp.data.expires_in * 1000;
-    console.log("Spotify token refreshed");
     next();
   } catch (err) {
     console.error("Failed to refresh Spotify token:", err.message);
@@ -81,9 +80,10 @@ export async function searchSpotify(query) {
     uri: t.uri,
   });
 
+
   return {
-    artists: resp.data.artists.items.map(formatArtist),
-    albums: resp.data.albums.items.map(formatAlbum),
-    tracks: resp.data.tracks.items.map(formatTrack),
+    artists: resp.data.artists?.items.map(formatArtist) || [],
+    albums: resp.data.albums?.items.map(formatAlbum) || [],
+    tracks: resp.data.tracks?.items.map(formatTrack) || [],
   };
 }

@@ -41,6 +41,23 @@ router.get("/:playlistId/tracks", authenticateToken, async (req, res) => {
   const userId = req.user;
   const { playlistId } = req.params;
 
+  // Cas spécial : si playlistId est "liked" ou "liked-songs", renvoyer les liked tracks
+  if (playlistId === "liked" || playlistId === "liked-songs") {
+    try {
+      const result = await pool.query(
+        `SELECT t.* FROM liked_tracks lt
+         JOIN tracks t ON lt.track_id = t.id 
+         WHERE lt.user_id = $1
+         ORDER BY lt.created_at DESC`,
+        [userId]
+      );
+      return res.json(result.rows);
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ error: "Database error" });
+    }
+  }
+
   try {
     // Vérifie que la playlist appartient bien à l'utilisateur
     const playlistCheck = await pool.query(
