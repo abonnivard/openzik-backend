@@ -13,8 +13,39 @@ const pool = new Pool({
 });
 
 export async function initDB() {
+  const maxRetries = 10;
+  const retryDelay = 5000; // 5 seconds
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`Database initialization attempt ${attempt}/${maxRetries}...`);
+      
+      // Test database connection
+      await pool.query('SELECT 1');
+      console.log('Database connection established.');
+      
+      // Proceed with table creation
+      await createTables();
+      
+      console.log('Database initialization completed successfully.');
+      return;
+      
+    } catch (error) {
+      console.error(`Database initialization attempt ${attempt} failed:`, error.message);
+      
+      if (attempt === maxRetries) {
+        console.error('Max retries reached. Database initialization failed.');
+        throw error;
+      }
+      
+      console.log(`Retrying in ${retryDelay/1000} seconds...`);
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
+    }
+  }
+}
+
+async function createTables() {
   try {
-    // --- Tables existantes ---
     await pool.query(`
       CREATE TABLE IF NOT EXISTS tracks (
         id SERIAL PRIMARY KEY,
@@ -70,7 +101,6 @@ export async function initDB() {
       )
     `);
 
-    // Crée l'admin initial si non existant
     const adminUsername = "admin";
     const adminPassword = "admin";
     const { rows } = await pool.query("SELECT * FROM users WHERE is_admin=$1", [true]);
@@ -84,30 +114,6 @@ export async function initDB() {
       console.log("Admin créé avec succès. Identifiants -> admin / admin");
     }
 
-    // --- Migrations pour ajouter les nouvelles colonnes ---
-    try {
-      // Ajouter profile_image à users si elle n'existe pas
-      await pool.query(`
-        ALTER TABLE users 
-        ADD COLUMN IF NOT EXISTS profile_image TEXT
-      `);
-      
-      // Ajouter custom_image à playlists si elle n'existe pas  
-      await pool.query(`
-        ALTER TABLE playlists 
-        ADD COLUMN IF NOT EXISTS custom_image TEXT
-      `);
-      
-      // Ajouter created_at à users si elle n'existe pas
-      await pool.query(`
-        ALTER TABLE users 
-        ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW()
-      `);
-    } catch (migrationError) {
-      console.log("Migrations already applied or error:", migrationError.message);
-    }
-
-    // --- Nouvelles tables pour playlists et liked tracks ---
     await pool.query(`
       CREATE TABLE IF NOT EXISTS playlists (
         id SERIAL PRIMARY KEY,
@@ -147,7 +153,6 @@ export async function initDB() {
       )
     `);
 
-    // Nouvelle table pour compter les lectures par utilisateur et track
     await pool.query(`
       CREATE TABLE IF NOT EXISTS user_track_plays (
         id SERIAL PRIMARY KEY,
@@ -159,16 +164,10 @@ export async function initDB() {
       )
     `);
 
-    // --- Migration pour ajouter is_pinned aux playlists existantes ---
-    try {
-      await pool.query(`ALTER TABLE playlists ADD COLUMN IF NOT EXISTS is_pinned BOOLEAN DEFAULT FALSE`);
-    } catch (err) {
-      // Colonne existe déjà, continue
-    }
 
     console.log("✅ PostgreSQL initialisé (tracks + albums + ingest_queue + users + playlists + liked_tracks + recently_played + user_track_plays)");
   } catch (err) {
-    console.error("Erreur initDB:", err.message);
+    console.error("Erreur lors de la création des tables:", err.message);
     throw err;
   }
 }
