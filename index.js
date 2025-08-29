@@ -25,7 +25,14 @@ const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3001";
 
 // middlewares
 app.use(cors({ 
-  origin: FRONTEND_URL,
+  origin: [
+    FRONTEND_URL,
+    "capacitor://localhost",
+    "ionic://localhost",
+    "http://localhost",
+    "https://localhost",
+    "http://100.64.0.1"
+  ],
   credentials: true 
 }));
 app.use(express.json({ limit: '50mb' }));

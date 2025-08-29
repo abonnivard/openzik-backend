@@ -6,7 +6,6 @@ export async function searchMusic(artist, album) {
     params: { query: `{Artist:${artist}}{Album:${album}}`, type: "music" },
     headers: { "X-Api-Key": process.env.PROWLARR_API_KEY },
   });
-
   console.log("Prowlarr response data:", resp.data);
 
   if (!resp.data || resp.data.length === 0) {
