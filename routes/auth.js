@@ -11,14 +11,14 @@ router.post("/", async (req, res) => {
   try {
     const userRes = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
     const user = userRes.rows[0];
-    if (!user) return res.status(401).json({ message: "Utilisateur inconnu" });
+    if (!user) return res.status(401).json({ message: "Unknown user" });
 
     if (!user.password_hash) {
-      return res.status(500).json({ message: "Utilisateur sans mot de passe défini" });
+      return res.status(500).json({ message: "User has no password set" });
     }
 
     const valid = await bcrypt.compare(password, user.password_hash);
-    if (!valid) return res.status(401).json({ message: "Mot de passe incorrect" });
+    if (!valid) return res.status(401).json({ message: "Incorrect password" });
 
     const token = jwt.sign(
       { id: user.id, username: user.username, is_admin: user.is_admin },
@@ -39,7 +39,7 @@ router.post("/", async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Erreur serveur" });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -50,20 +50,20 @@ router.post("/change-password", async (req, res) => {
   try {
     const userRes = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
     const user = userRes.rows[0];
-    if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
+    if (!user) return res.status(404).json({ message: "User not found" });
 
     const valid = await bcrypt.compare(oldPassword, user.password_hash);
-    if (!valid) return res.status(401).json({ message: "Mot de passe actuel incorrect" });
+    if (!valid) return res.status(401).json({ message: "Incorrect current password" });
 
     const hash = await bcrypt.hash(newPassword, 10);
     await pool.query(
       "UPDATE users SET password_hash = $1, must_change_password = false WHERE username = $2",
       [hash, username]
     );
-    res.json({ message: "Mot de passe changé avec succès" });
+    res.json({ message: "Password changed successfully" });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Erreur serveur" });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -101,10 +101,10 @@ router.post("/user-info", async (req, res) => {
       "UPDATE users SET username=$1, first_name=$2, last_name=$3 WHERE id=$4",
       [username, first_name, last_name, decoded.id]
     );
-    res.json({ message: "Infos utilisateur mises à jour" });
+    res.json({ message: "User info updated successfully" });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Erreur serveur" });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
