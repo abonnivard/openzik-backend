@@ -5,8 +5,8 @@ FROM node:18-alpine
 WORKDIR /app
 
 # Create non-root user for security
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S musicapp -u 1001
+RUN addgroup -g 1000 -S nodejs && \
+    adduser -S musicapp -u 1000
 
 # Copy package files
 COPY package*.json ./
