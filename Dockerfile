@@ -17,8 +17,10 @@ RUN npm ci --only=production && npm cache clean --force
 # Copy source code
 COPY . .
 
-# Change ownership to non-root user
-RUN chown -R musicapp:nodejs /app
+# Create music directory with proper permissions
+RUN mkdir -p /app/music && \
+    chown -R musicapp:nodejs /app && \
+    chmod -R 755 /app/music
 
 # Switch to non-root user
 USER musicapp
